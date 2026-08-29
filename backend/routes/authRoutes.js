@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const User = require("../models/user");
 
 const router = express.Router();
 
@@ -67,7 +67,6 @@ router.post("/register", async (req, res) => {
     }
 });
 
-
 // ==========================================
 // LOGIN USER
 // POST /api/auth/login
@@ -108,6 +107,15 @@ router.post("/login", async (req, res) => {
             });
         }
 
+        // Check JWT secret
+        if (!process.env.JWT_SECRET) {
+            console.error("JWT_SECRET is missing");
+
+            return res.status(500).json({
+                message: "JWT configuration error"
+            });
+        }
+
         // Create JWT token
         const token = jwt.sign(
             {
@@ -138,7 +146,6 @@ router.post("/login", async (req, res) => {
         });
     }
 });
-
 
 // ==========================================
 // EXPORT ROUTER

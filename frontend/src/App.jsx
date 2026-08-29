@@ -1,8 +1,7 @@
-```jsx
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://task-manager-backend-n49g.onrender.com";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -19,7 +18,10 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       });
 
       const data = await response.json();
@@ -36,7 +38,9 @@ function App() {
 
       setToken(data.token);
 
-      return { success: true };
+      return {
+        success: true,
+      };
     } catch (error) {
       console.error("Login error:", error);
 
@@ -95,16 +99,21 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     setToken(null);
   };
 
   // ==========================================
-  // PAGE
+  // DASHBOARD
   // ==========================================
 
   if (token) {
     return <Dashboard token={token} onLogout={handleLogout} />;
   }
+
+  // ==========================================
+  // AUTH PAGE
+  // ==========================================
 
   return (
     <AuthPage
@@ -167,6 +176,7 @@ function Login({ onLogin, onSwitch }) {
   return (
     <div className="auth-box">
       <h1>Task Manager</h1>
+
       <h2>Login</h2>
 
       <form onSubmit={submit}>
@@ -231,6 +241,7 @@ function Register({ onRegister, onSwitch }) {
   return (
     <div className="auth-box">
       <h1>Task Manager</h1>
+
       <h2>Create Account</h2>
 
       <form onSubmit={submit}>
@@ -283,30 +294,20 @@ function Dashboard({ token, onLogout }) {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+
   const [status, setStatus] = useState("pending");
+
   const [priority, setPriority] = useState("medium");
+
   const [dueDate, setDueDate] = useState("");
 
   const [editingId, setEditingId] = useState(null);
 
   const [message, setMessage] = useState("");
 
-  // Search and filters
   const [search, setSearch] = useState("");
+
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filterPriority, setFilterPriority] = useState("all");
-
-  // ==========================================
-  // LOGOUT IF TOKEN IS INVALID
-  // ==========================================
-
-  const handleUnauthorized = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
-  };
 
   // ==========================================
   // FETCH TASKS
@@ -323,18 +324,24 @@ function Dashboard({ token, onLogout }) {
       const data = await response.json();
 
       if (response.status === 401 || response.status === 403) {
-        handleUnauthorized();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        window.location.reload();
+
         return;
       }
 
       if (!response.ok) {
         setMessage(data.message || "Failed to fetch tasks");
+
         return;
       }
 
       setTasks(data.tasks || []);
     } catch (error) {
       console.error("Fetch tasks error:", error);
+
       setMessage("Unable to connect to server");
     }
   };
@@ -345,7 +352,7 @@ function Dashboard({ token, onLogout }) {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [token]);
 
   // ==========================================
   // CREATE / UPDATE TASK
@@ -356,15 +363,16 @@ function Dashboard({ token, onLogout }) {
 
     if (!title.trim()) {
       setMessage("Task title is required");
+
       return;
     }
 
     const taskData = {
-      title: title.trim(),
+      title,
       description,
       status,
       priority,
-      dueDate: dueDate || undefined,
+      dueDate,
     };
 
     try {
@@ -386,12 +394,17 @@ function Dashboard({ token, onLogout }) {
       const data = await response.json();
 
       if (response.status === 401 || response.status === 403) {
-        handleUnauthorized();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        window.location.reload();
+
         return;
       }
 
       if (!response.ok) {
         setMessage(data.message || "Operation failed");
+
         return;
       }
 
@@ -402,9 +415,11 @@ function Dashboard({ token, onLogout }) {
       );
 
       clearForm();
+
       fetchTasks();
     } catch (error) {
       console.error("Task operation error:", error);
+
       setMessage("Unable to connect to server");
     }
   };
@@ -417,8 +432,11 @@ function Dashboard({ token, onLogout }) {
     setEditingId(task._id);
 
     setTitle(task.title);
+
     setDescription(task.description || "");
+
     setStatus(task.status || "pending");
+
     setPriority(task.priority || "medium");
 
     if (task.dueDate) {
@@ -459,24 +477,26 @@ function Dashboard({ token, onLogout }) {
       const data = await response.json();
 
       if (response.status === 401 || response.status === 403) {
-        handleUnauthorized();
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        window.location.reload();
+
         return;
       }
 
       if (!response.ok) {
         setMessage(data.message || "Failed to delete task");
+
         return;
       }
 
       setMessage("Task deleted successfully! 🗑️");
 
-      if (editingId === id) {
-        clearForm();
-      }
-
       fetchTasks();
     } catch (error) {
       console.error("Delete error:", error);
+
       setMessage("Unable to connect to server");
     }
   };
@@ -499,24 +519,20 @@ function Dashboard({ token, onLogout }) {
   // ==========================================
 
   const filteredTasks = tasks.filter((task) => {
-    const searchText = search.toLowerCase();
-
     const matchesSearch =
-      task.title.toLowerCase().includes(searchText) ||
-      (task.description || "").toLowerCase().includes(searchText);
+      task.title.toLowerCase().includes(search.toLowerCase()) ||
+      (task.description || "")
+        .toLowerCase()
+        .includes(search.toLowerCase());
 
     const matchesStatus =
       filterStatus === "all" || task.status === filterStatus;
 
-    const matchesPriority =
-      filterPriority === "all" ||
-      (task.priority || "medium") === filterPriority;
-
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus;
   });
 
   // ==========================================
-  // COUNTERS
+  // TASK COUNTERS
   // ==========================================
 
   const totalTasks = tasks.length;
@@ -533,29 +549,8 @@ function Dashboard({ token, onLogout }) {
     (task) => task.status === "completed"
   ).length;
 
-  const highPriorityTasks = tasks.filter(
-    (task) => task.priority === "high"
-  ).length;
-
   // ==========================================
-  // PRIORITY LABEL
-  // ==========================================
-
-  const getPriorityLabel = (priorityValue) => {
-    switch (priorityValue) {
-      case "low":
-        return "Low";
-
-      case "high":
-        return "High";
-
-      default:
-        return "Medium";
-    }
-  };
-
-  // ==========================================
-  // DASHBOARD UI
+  // DASHBOARD
   // ==========================================
 
   return (
@@ -567,7 +562,8 @@ function Dashboard({ token, onLogout }) {
           <h1>Task Manager</h1>
 
           <p>
-            Welcome, <strong>{user.name || "User"}</strong> 👋
+            Welcome,{" "}
+            <strong>{user.name || "User"}</strong> 👋
           </p>
         </div>
 
@@ -580,27 +576,26 @@ function Dashboard({ token, onLogout }) {
         <div className="stats">
           <div className="stat-card">
             <h3>Total</h3>
+
             <strong>{totalTasks}</strong>
           </div>
 
           <div className="stat-card">
             <h3>Pending</h3>
+
             <strong>{pendingTasks}</strong>
           </div>
 
           <div className="stat-card">
             <h3>In Progress</h3>
+
             <strong>{progressTasks}</strong>
           </div>
 
           <div className="stat-card">
             <h3>Completed</h3>
-            <strong>{completedTasks}</strong>
-          </div>
 
-          <div className="stat-card">
-            <h3>High Priority</h3>
-            <strong>{highPriorityTasks}</strong>
+            <strong>{completedTasks}</strong>
           </div>
         </div>
 
@@ -626,12 +621,18 @@ function Dashboard({ token, onLogout }) {
               onChange={(e) => setDescription(e.target.value)}
             />
 
+            {/* STATUS */}
+
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
               <option value="pending">Pending</option>
-              <option value="in-progress">In Progress</option>
+
+              <option value="in-progress">
+                In Progress
+              </option>
+
               <option value="completed">Completed</option>
             </select>
 
@@ -642,7 +643,11 @@ function Dashboard({ token, onLogout }) {
               onChange={(e) => setPriority(e.target.value)}
             >
               <option value="low">Low Priority</option>
-              <option value="medium">Medium Priority</option>
+
+              <option value="medium">
+                Medium Priority
+              </option>
+
               <option value="high">High Priority</option>
             </select>
 
@@ -688,20 +693,15 @@ function Dashboard({ token, onLogout }) {
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
           >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
-          </select>
+            <option value="all">All Tasks</option>
 
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-          >
-            <option value="all">All Priorities</option>
-            <option value="low">Low Priority</option>
-            <option value="medium">Medium Priority</option>
-            <option value="high">High Priority</option>
+            <option value="pending">Pending</option>
+
+            <option value="in-progress">
+              In Progress
+            </option>
+
+            <option value="completed">Completed</option>
           </select>
         </div>
 
@@ -725,27 +725,30 @@ function Dashboard({ token, onLogout }) {
                   <div className="task-header">
                     <h3>{task.title}</h3>
 
+                    {/* STATUS BADGE */}
+
                     <span
-                      className={`status-badge ${
-                        task.status
-                      }`}
+                      className={`status-badge ${task.status}`}
                     >
                       {task.status === "in-progress"
                         ? "In Progress"
                         : task.status}
                     </span>
-                  </div>
 
-                  {/* PRIORITY */}
+                    {/* PRIORITY BADGE */}
 
-                  <p className="priority">
-                    Priority:{" "}
-                    <strong>
-                      {getPriorityLabel(
+                    <span
+                      className={`priority-badge ${
                         task.priority || "medium"
-                      )}
-                    </strong>
-                  </p>
+                      }`}
+                    >
+                      {task.priority === "high"
+                        ? "High"
+                        : task.priority === "low"
+                        ? "Low"
+                        : "Medium"}
+                    </span>
+                  </div>
 
                   <p className="description">
                     {task.description || "No description"}
@@ -788,4 +791,3 @@ function Dashboard({ token, onLogout }) {
 }
 
 export default App;
-```

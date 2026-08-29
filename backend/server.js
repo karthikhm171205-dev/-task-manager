@@ -1,6 +1,6 @@
 const dns = require("dns");
 
-// Fix MongoDB Atlas SRV DNS lookup
+// MongoDB Atlas SRV DNS lookup
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const express = require("express");
@@ -28,7 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
 // ==========================================
-// CONNECT TO MONGODB
+// DATABASE
 // ==========================================
 
 connectDB();
@@ -42,7 +42,7 @@ app.get("/", (req, res) => {
 });
 
 // ==========================================
-// START SERVER
+// SERVER
 // ==========================================
 
 const PORT = process.env.PORT || 5000;
